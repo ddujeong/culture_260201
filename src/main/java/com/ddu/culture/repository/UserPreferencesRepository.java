@@ -10,7 +10,9 @@ import java.util.Optional;
 
 public interface UserPreferencesRepository extends JpaRepository<UserPreferences, Long>{
 
-	List<UserPreferences> findByUser(User user);
+	List<UserPreferences> findByUserId(Long userId);
+	
+	List<UserPreferences> findByUserIdAndCategory(Long userId, String category);
 	
 	Optional<UserPreferences> findByUserAndCategoryAndGenre(User user, String category, String genre);
 }

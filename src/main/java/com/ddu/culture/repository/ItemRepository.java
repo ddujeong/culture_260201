@@ -11,4 +11,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 	List<Item> findByCategory(String category);
 	
 	List<Item> findByCategoryAndGenre(String category, String genre);
+	
+	List<Item> findByCategoryAndGenreIn(String category, List<String> genres);
+
 }
