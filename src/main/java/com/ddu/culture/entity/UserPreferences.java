@@ -1,6 +1,8 @@
 package com.ddu.culture.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,7 +21,10 @@ public class UserPreferences {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String category; // music / book / movie
+    @Enumerated(EnumType.STRING)
+    private Category category;
+
+    
     private String genre;    // 선택 장르
     private int weight;      // 기본 1
 

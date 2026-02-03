@@ -7,6 +7,8 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,7 +26,10 @@ public class Item {
     private Long id;
 
     private String title;       
-    private String category;    
+
+    @Enumerated(EnumType.STRING)
+    private Category category;
+    
     private String genre;       
     private String description; 
     private LocalDate releaseDate;
@@ -35,5 +40,9 @@ public class Item {
     // 연관관계
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAction> actions = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserReview> reviews = new ArrayList<>();
+
 }
 

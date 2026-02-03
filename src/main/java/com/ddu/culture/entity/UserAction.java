@@ -3,6 +3,8 @@ package com.ddu.culture.entity;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -21,8 +23,9 @@ public class UserAction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String actionType; // like / click / reserve
-    private String category;   // music / book / movie
+    @Enumerated(EnumType.STRING)
+    private ActionType actionType;
+    
     private LocalDateTime timestamp;
 
     // User 연관

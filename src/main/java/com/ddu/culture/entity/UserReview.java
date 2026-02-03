@@ -22,11 +22,12 @@ public class UserReview {
     @JoinColumn(name = "item_id")
     private Item item;
 
+    @Column(nullable = false)
     private int rating; // 1~5 점
 
     @Column(length = 500)
     private String comment; // 한줄 코멘트
 
-    private LocalDateTime timestamp;
+    private LocalDateTime createdAt;
 }
 
