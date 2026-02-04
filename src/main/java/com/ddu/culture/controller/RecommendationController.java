@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ddu.culture.entity.Category;
 import com.ddu.culture.service.RecommendationService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class RecommendationController {
 	
 	// 특정 카테고리별 추천
 	@GetMapping("/category")
-	public ResponseEntity<?> getCategoryRecommendations(@RequestParam(name = "userId") Long userId, @RequestParam(name = "category") String category) {
+	public ResponseEntity<?> getCategoryRecommendations(@RequestParam(name = "userId") Long userId, @RequestParam(name = "category") Category category) {
 		return ResponseEntity.ok(recommendationService.recommendForuserByCategory(userId, category));
 	}
 }

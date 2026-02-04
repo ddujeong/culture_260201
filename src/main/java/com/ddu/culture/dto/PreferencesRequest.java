@@ -11,12 +11,5 @@ import lombok.Data;
 public class PreferencesRequest {
 
 	private Long userId;
-	private List<PreferenceDto> preferences;
-	
-	@Data
-	public static class PreferenceDto {
-		private Category category;
-		private String genre;
-		
-	}
+	private List<Long> itemsIds;
 }

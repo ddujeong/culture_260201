@@ -26,7 +26,7 @@ public class UserAction {
     @Enumerated(EnumType.STRING)
     private ActionType actionType;
     
-    private LocalDateTime timestamp;
+    private LocalDateTime createdAt;
 
     // User 연관
     @ManyToOne(fetch = FetchType.LAZY)

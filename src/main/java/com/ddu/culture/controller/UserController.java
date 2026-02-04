@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ddu.culture.dto.LoginRequest;
 import com.ddu.culture.dto.PreferencesRequest;
+import com.ddu.culture.dto.PreferencesResponse;
 import com.ddu.culture.dto.SignupRequest;
 import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.UserPreferences;
@@ -33,7 +35,15 @@ public class UserController {
 	// 취향 등록
 	@PostMapping("/preferences")
 	public ResponseEntity<?> registerPreferences(@RequestBody PreferencesRequest request) {
-		List<UserPreferences> prefs = userService.registerPreferences(request);
+		List<PreferencesResponse> prefs = userService.registerPreferences(request);
 		return ResponseEntity.ok(prefs);
 	}
+	
+	// 임시 로그인 (삭제 예정)
+	@PostMapping("/login")
+	public ResponseEntity<User> login(@RequestBody LoginRequest request) {
+	    User user = userService.login(request);
+	    return ResponseEntity.ok(user);
+	}
+
 }

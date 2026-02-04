@@ -1,8 +1,11 @@
 package com.ddu.culture.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.data.annotation.CreatedDate;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -39,6 +42,10 @@ public class Item {
     @Column(length = 2000)
     private String embeddingVector;
 
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+    
     // 연관관계
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAction> actions = new ArrayList<>();

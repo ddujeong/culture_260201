@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.ddu.culture.dto.HomeRecommendationResponse;
 import com.ddu.culture.dto.RecommendationDto;
 import com.ddu.culture.dto.RecommendationResponse;
+import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.UserAction;
 import com.ddu.culture.entity.UserPreferences;
@@ -28,7 +30,7 @@ public class RecommendationService {
 	private final UserPreferencesRepository userPreferencesRepository;
 	private final UserActionRepository userActionRepository;
 	
-	public RecommendationResponse recommendForuserByCategory(Long userId, String category) {
+	public RecommendationResponse recommendForuserByCategory(Long userId, Category category) {
 		
 		// 유저 선호 장르 조회
 		List<UserPreferences> prefs = userPreferencesRepository.findByUserId(userId);
@@ -47,8 +49,25 @@ public class RecommendationService {
 		// 후보 Item 조회
 		Set<String> allGenres = new HashSet<>(preferredGenres);
 		allGenres.addAll(actionCounts.keySet());
-
 		
+		if (allGenres.isEmpty()) {
+		    List<Item> fallbackItems =
+		        itemRepository.findTop10ByCategoryOrderByCreatedAtDesc(category);
+
+		    List<RecommendationDto> dtos = fallbackItems.stream()
+		        .map(item -> new RecommendationDto(
+		            item.getId(),
+		            item.getTitle(),
+		            item.getCategory().name(),
+		            item.getGenre(),
+		            0.0,
+		            "인기 콘텐츠 추천이에요."
+		        ))
+		        .toList();
+
+		    return new RecommendationResponse(dtos);
+		}
+
 		List<Item> candidateItems = itemRepository.findByCategoryAndGenreIn(category, new ArrayList<>(allGenres))
 				.stream()
 				.distinct()
@@ -74,18 +93,18 @@ public class RecommendationService {
 		double score = 0.0;
 		
 		// 선호 장르 가산
-		if (preferredGenres.contains(item.getGenre())) score += 5.0;
+		if (preferredGenres.contains(item.getGenre())) score += 2.0;
 		// 최근 행동 장르 가산
-		score += actionCounts.getOrDefault(item.getGenre(), 0L) * 1.5;
+		score += actionCounts.getOrDefault(item.getGenre(), 0L) * 2.0;
 		// 평점 계산
 		double averageRating = item.getReviews().stream()
 				.mapToDouble(r -> r.getRating())
 				.average()
 				.orElse(0.0);
-		score += averageRating * 1.5;
+		score += averageRating * 2.0;
 		// 조회수 계산
 		long viewCount = item.getActions().stream().count();
-		score += viewCount * 0.01;
+		score += viewCount * 0.05;
 		
 		return score;
 	
@@ -103,12 +122,13 @@ public class RecommendationService {
 	}
 	
 	// 홈화면용 카테고별 추천
-	public Map<String, RecommendationResponse> recommendForHome(Long userId) {
-	    return Map.of(
-	        "MOVIE", recommendForuserByCategory(userId, "MOVIE"),
-	        "BOOK", recommendForuserByCategory(userId, "BOOK"),
-	        "MUSIC", recommendForuserByCategory(userId, "MUSIC")
-	    );
-	}
+	public HomeRecommendationResponse recommendForHome(Long userId) {
+	    return new HomeRecommendationResponse(
+	            recommendForuserByCategory(userId, Category.MOVIE),
+	            recommendForuserByCategory(userId, Category.BOOK),
+	            recommendForuserByCategory(userId, Category.MUSIC)
+	        );
 
+	}
+	
 }
