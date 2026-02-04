@@ -16,4 +16,7 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
 	Optional<UserReview> findByUserAndItem(User user, Item item);
 	
 	List<UserReview> findByItem(Item item);
+	
+    List<UserReview> findByItemIdOrderByCreatedAtDesc(Long itemId);
+
 }

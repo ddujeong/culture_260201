@@ -2,10 +2,12 @@ package com.ddu.culture.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ddu.culture.dto.ItemDetailResponse;
 import com.ddu.culture.entity.Category;
 import com.ddu.culture.service.ItemService;
 
@@ -24,4 +26,9 @@ public class ItemController {
 			@RequestParam(defaultValue = "5", name = "limit") int limit) {
 		return ResponseEntity.ok(itemService.getRandomItemsByCategory(category, limit));
 	}
+	@GetMapping("/{id}")
+    public ResponseEntity<ItemDetailResponse> getItem(@PathVariable(name = "id") Long id) {
+        ItemDetailResponse response = itemService.getItemDetail(id);
+        return ResponseEntity.ok(response);
+    }
 }

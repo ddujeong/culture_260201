@@ -46,6 +46,9 @@ public class Item {
     @Column(updatable = false)
     private LocalDateTime createdAt;
     
+    @Column(length = 2000)
+    private String img;
+    
     // 연관관계
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAction> actions = new ArrayList<>();
