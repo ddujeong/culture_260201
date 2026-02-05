@@ -39,5 +39,6 @@ public class UserPreferences {
     @JoinColumn(name = "item_id")
     private Item item; // 선택한 실제 아이템 연결
 
+    private String tag; // 선택 태그
 
 }

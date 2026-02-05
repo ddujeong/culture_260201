@@ -7,13 +7,18 @@ import org.springframework.stereotype.Service;
 import com.ddu.culture.dto.LoginRequest;
 import com.ddu.culture.dto.PreferencesRequest;
 import com.ddu.culture.dto.PreferencesResponse;
+import com.ddu.culture.dto.ReviewRequest;
 import com.ddu.culture.dto.SignupRequest;
+import com.ddu.culture.dto.UserReviewResponse;
+import com.ddu.culture.dto.UserStatsResponse;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.UserPreferences;
+import com.ddu.culture.entity.UserReview;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.UserPreferencesRepository;
 import com.ddu.culture.repository.UserRepository;
+import com.ddu.culture.repository.UserReviewRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,8 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final UserPreferencesRepository userPreferencesRepository;
 	private final ItemRepository itemRepository;
+    private final UserReviewRepository userReviewRepository; // 추가
+
 	
 	// 회원가입
 	public User signup(SignupRequest request) {
@@ -72,4 +79,58 @@ public class UserService {
 	    return user;
 	}
 
+	// 1. 사용자 통계/취향
+    public UserStatsResponse getUserStats(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("user not found"));
+
+        // 평균 평점
+        Double avgRating = userReviewRepository.findAvgRatingByUserId(userId);
+        if (avgRating == null) avgRating = 0.0;
+
+        // 총 리뷰 수
+        Long totalReviews = userReviewRepository.countByUserId(userId);
+        // 선호 카테고리 (가장 많이 등록한 카테고리)
+        List<String> favoriteCategories = userPreferencesRepository.findFavoriteCategory(userId);
+        String favoriteCategory = favoriteCategories.isEmpty() ? "없음" : favoriteCategories.get(0);
+
+        // 제외 장르/태그
+        List<UserPreferences> prefs = userPreferencesRepository.findByUserId(userId);
+        List<String> dislikeGenres = prefs.stream()
+                .filter(p -> p.getWeight() < 0 && p.getGenre() != null)
+                .map(UserPreferences::getGenre)
+                .distinct()
+                .toList();
+
+        List<String> dislikeTags = prefs.stream()
+                .filter(p -> p.getWeight() < 0 && p.getTag() != null)
+                .map(UserPreferences::getTag)
+                .distinct()
+                .toList();
+
+        return new UserStatsResponse(avgRating, totalReviews, favoriteCategory, dislikeGenres, dislikeTags);
+    }
+
+    // 2. 리뷰/평점 조회
+    public List<UserReviewResponse> getUserReviews(Long userId) {
+    	
+    	return userReviewRepository.findByUserId(userId).stream()
+                .map(UserReviewResponse::from)
+                .toList();    }
+
+    // 3. 리뷰 수정
+    public UserReviewResponse updateReview(Long reviewId, ReviewRequest request) {
+        UserReview review = userReviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("review not found"));
+
+        review.setRating(request.getRating());
+        review.setComment(request.getComment());
+
+        return UserReviewResponse.from(review);
+    }
+
+    // 4. 리뷰 삭제
+    public void deleteReview(Long reviewId) {
+        userReviewRepository.deleteById(reviewId);
+    }
 }
