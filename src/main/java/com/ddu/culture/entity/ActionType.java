@@ -5,5 +5,7 @@ public enum ActionType {
 	VIEW,
     CLICK,
     LIKE,
-    RESERVE
+    RESERVE,
+    WATCHED,
+    REVIEWED
 }

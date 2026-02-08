@@ -27,8 +27,9 @@ public class ItemController {
 		return ResponseEntity.ok(itemService.getRandomItemsByCategory(category, limit));
 	}
 	@GetMapping("/{id}")
-    public ResponseEntity<ItemDetailResponse> getItem(@PathVariable(name = "id") Long id) {
-        ItemDetailResponse response = itemService.getItemDetail(id);
+    public ResponseEntity<ItemDetailResponse> getItem(@PathVariable(name = "id") Long id,
+    		@RequestParam(required = false, name = "userId") Long userId) {
+        ItemDetailResponse response = itemService.getItemDetail(id, userId);
         return ResponseEntity.ok(response);
     }
 }

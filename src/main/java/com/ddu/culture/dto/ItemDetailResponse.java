@@ -6,13 +6,16 @@ import java.util.List;
 
 import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
+import com.ddu.culture.entity.RecommendationReason;
 import com.ddu.culture.entity.UserReview;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class ItemDetailResponse {
@@ -25,6 +28,7 @@ public class ItemDetailResponse {
     private List<OTTInfo> otts; // 시청 가능한 OTT
     private double averageRating;
     private LocalDate releaseDate;
+    private RecommendationReasonDto recommendationReason; // ⭐ 추가
     
     @Getter
     @AllArgsConstructor
@@ -36,7 +40,7 @@ public class ItemDetailResponse {
         private String logoUrl;
     }
     
-    public static ItemDetailResponse from(Item item, List<OTTInfo> otts) {
+    public static ItemDetailResponse from(Item item, List<OTTInfo> otts, double averageRating) {
 		ItemDetailResponse dto = new ItemDetailResponse();
 		dto.id = item.getId();
 		dto.title = item.getTitle();
@@ -45,11 +49,14 @@ public class ItemDetailResponse {
 		dto.description = item.getDescription();
 		dto.img = item.getImg();
 		dto.otts = otts;
-		dto.averageRating = item.getReviews().stream()
-				.mapToDouble(UserReview::getRating)
-				.average()
-				.orElse(0.0);
+		dto.averageRating = averageRating;
 		dto.releaseDate = item.getReleaseDate();
+		dto.recommendationReason =
+			    new RecommendationReasonDto(
+			        RecommendationReason.PREFERRED_GENRE,
+			        "선호 장르 기반 추천이에요."
+			    );
+
 		return dto;
 		
 	}

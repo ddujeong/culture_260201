@@ -1,6 +1,10 @@
 package com.ddu.culture.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -11,11 +15,14 @@ import com.ddu.culture.dto.ReviewRequest;
 import com.ddu.culture.dto.SignupRequest;
 import com.ddu.culture.dto.UserReviewResponse;
 import com.ddu.culture.dto.UserStatsResponse;
+import com.ddu.culture.entity.ActionType;
+import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.UserPreferences;
 import com.ddu.culture.entity.UserReview;
 import com.ddu.culture.repository.ItemRepository;
+import com.ddu.culture.repository.UserActionRepository;
 import com.ddu.culture.repository.UserPreferencesRepository;
 import com.ddu.culture.repository.UserRepository;
 import com.ddu.culture.repository.UserReviewRepository;
@@ -32,6 +39,7 @@ public class UserService {
 	private final UserPreferencesRepository userPreferencesRepository;
 	private final ItemRepository itemRepository;
     private final UserReviewRepository userReviewRepository; // 추가
+   private final UserActionRepository userActionRepository;
 
 	
 	// 회원가입
@@ -96,20 +104,58 @@ public class UserService {
 
         // 제외 장르/태그
         List<UserPreferences> prefs = userPreferencesRepository.findByUserId(userId);
-        List<String> dislikeGenres = prefs.stream()
-                .filter(p -> p.getWeight() < 0 && p.getGenre() != null)
-                .map(UserPreferences::getGenre)
+        List<String> dislikeGenres = new ArrayList<>(
+        	    prefs.stream()
+        	         .filter(p -> p.getWeight() < 0 && p.getGenre() != null)
+        	         .map(UserPreferences::getGenre)
+        	         .distinct()
+        	         .toList()
+        	);
+     // 🔹 리뷰 기반 비선호 장르 추가 (평점 2점 이하)
+        List<UserReview> reviews = userReviewRepository.findByUserId(userId);
+        List<String> dislikedFromReviews = reviews.stream()
+                .filter(r -> r.getRating() <= 2)   // 1~2점 리뷰
+                .filter(r -> r.getItem() != null && r.getItem().getGenre() != null)
+                .map(r -> r.getItem().getGenre())
                 .distinct()
                 .toList();
 
+        // 기존 dislikeGenres에 합치기
+        dislikeGenres.addAll(dislikedFromReviews);
+        dislikeGenres = dislikeGenres.stream().distinct().toList();  // 중복 제거
+        
         List<String> dislikeTags = prefs.stream()
                 .filter(p -> p.getWeight() < 0 && p.getTag() != null)
                 .map(UserPreferences::getTag)
                 .distinct()
                 .toList();
 
-        return new UserStatsResponse(avgRating, totalReviews, favoriteCategory, dislikeGenres, dislikeTags);
-    }
+     // 2️⃣ 장르/카테고리별 평균 평점 계산
+
+        Map<String, Double> avgRatingByCategory = reviews.stream()
+                .filter(r -> r.getItem() != null && r.getItem().getCategory() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getItem().getCategory().toString(), // String으로 변환
+                        Collectors.averagingDouble(UserReview::getRating)
+                ));
+
+        Map<String, Double> avgRatingByGenre = reviews.stream()
+                .filter(r -> r.getItem() != null && r.getItem().getGenre() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getItem().getGenre().toString(),
+                        Collectors.averagingDouble(UserReview::getRating)
+                ));
+
+
+        return new UserStatsResponse(
+                avgRating,
+                totalReviews,
+                favoriteCategory,
+                dislikeGenres,
+                dislikeTags,
+                avgRatingByCategory,
+                avgRatingByGenre
+        );   }
 
     // 2. 리뷰/평점 조회
     public List<UserReviewResponse> getUserReviews(Long userId) {
@@ -117,6 +163,11 @@ public class UserService {
     	return userReviewRepository.findByUserId(userId).stream()
                 .map(UserReviewResponse::from)
                 .toList();    }
+    public List<UserReviewResponse> getUserReviewsByCategory(Long userId, Category category) {
+        return userReviewRepository.findByUserIdAndCategory(userId, category).stream()
+                .map(UserReviewResponse::from)
+                .toList();
+    }
 
     // 3. 리뷰 수정
     public UserReviewResponse updateReview(Long reviewId, ReviewRequest request) {
@@ -133,4 +184,36 @@ public class UserService {
     public void deleteReview(Long reviewId) {
         userReviewRepository.deleteById(reviewId);
     }
+    
+    public Map<String, Long> getGenreStatsByAction(Long userId) {
+        List<Object[]> results = userActionRepository.countGenresByUser(userId, ActionType.WATCHED);
+
+        Map<String, Long> genreStats = new HashMap<>();
+        for (Object[] row : results) {
+            genreStats.put((String) row[0], (Long) row[1]);
+        }
+        return genreStats;
+    }
+    public Map<Integer, Long> getRatingDistribution(Long userId) {
+        List<Object[]> results = userReviewRepository.countRatingByUserId(userId);
+
+        Map<Integer, Long> ratingStats = new HashMap<>();
+        for (Object[] row : results) {
+            ratingStats.put((Integer) row[0], (Long) row[1]);
+        }
+        return ratingStats;
+    }
+    public Map<String, Double> getAvgRatingByCategory(Long userId, Category category) {
+        List<UserReview> reviews = userReviewRepository.findByUserId(userId);
+
+        return reviews.stream()
+                .filter(r -> r.getItem() != null && category.equals(r.getItem().getCategory()))
+                .filter(r -> r.getItem().getGenre() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getItem().getGenre(),
+                        Collectors.averagingDouble(UserReview::getRating)
+                ));
+    }
+
+
 }

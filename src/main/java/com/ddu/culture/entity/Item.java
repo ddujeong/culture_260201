@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -48,6 +49,10 @@ public class Item {
     
     @Column(length = 2000)
     private String img;
+    
+    @ElementCollection
+    @Column(name="tags")
+    private List<String> tagsList;
     
     // 연관관계
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
