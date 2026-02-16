@@ -29,6 +29,14 @@ public interface UserPreferencesRepository extends JpaRepository<UserPreferences
 		    GROUP BY p.genre
 		""")
 		List<Object[]> countGenreByUserId(@Param("userId") Long userId);
+	@Query("""
+		    SELECT p.genre
+		    FROM UserPreferences p
+		    WHERE p.user.id = :userId
+		    GROUP BY p.genre
+		    ORDER BY COUNT(p) DESC
+		""")
+		List<String> findPreferredGenres(@Param("userId") Long userId);
 
 
 }

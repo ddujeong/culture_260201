@@ -21,13 +21,13 @@ public class RecommendationController {
 	
 	// 홈화면 추천용 (노래, 영화, 책 모두)
 	@GetMapping("/home")
-	public ResponseEntity<?> getHomeRecommendations(@RequestParam(name = "userId") Long userId) {
+	public ResponseEntity<?> getHomeRecommendations(@RequestParam(name = "userId", required = false) Long userId) {
 		return ResponseEntity.ok(recommendationService.recommendForHome(userId));
 	}
 	
 	// 특정 카테고리별 추천
 	@GetMapping("/category")
-	public ResponseEntity<?> getCategoryRecommendations(@RequestParam(name = "userId") Long userId, @RequestParam(name = "category") Category category) {
-		return ResponseEntity.ok(recommendationService.recommendForuserByCategory(userId, category));
+	public ResponseEntity<?> getCategoryRecommendations(@RequestParam(name = "userId", required = false) Long userId, @RequestParam(name = "category") Category category) {
+		return ResponseEntity.ok(recommendationService.recommendForuserByCategory(userId, category,null));
 	}
 }

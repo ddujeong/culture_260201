@@ -1,15 +1,20 @@
 package com.ddu.culture.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.ddu.culture.dto.ItemDetailResponse;
+import com.ddu.culture.dto.ItemScoreDto;
 import com.ddu.culture.dto.RecommendationReasonDto;
 import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
+import com.ddu.culture.entity.User;
 import com.ddu.culture.repository.ItemRepository;
+import com.ddu.culture.repository.UserPreferencesRepository;
+import com.ddu.culture.repository.UserRepository;
 import com.ddu.culture.repository.UserReviewRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,8 @@ public class ItemService {
 	private final ItemRepository itemRepository;
 	private final UserReviewRepository userReviewRepository;
 	private final RecommendationService recommendationService;
+	private final UserRepository userRepository;
+	private final UserPreferencesRepository userPreferencesRepository;
 
 	
 	public List<Item> getRandomItemsByCategory(Category category, int limit) {
@@ -72,5 +79,6 @@ public class ItemService {
 
         return response;
     }
+
 }
 

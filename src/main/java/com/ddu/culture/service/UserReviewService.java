@@ -15,6 +15,7 @@ import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.UserRepository;
 import com.ddu.culture.repository.UserReviewRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,6 +35,7 @@ public class UserReviewService {
     }
 
     // 2. 리뷰 작성
+    @Transactional
     public UserReviewResponse addReview(UserReviewRequest request) {
         User user = userRepository.findById(request.getUserId())
                         .orElseThrow(() -> new RuntimeException("User not found"));
@@ -47,6 +49,8 @@ public class UserReviewService {
         review.setComment(request.getComment());
         review.setCreatedAt(LocalDateTime.now());
 
+        item.addReviewRating(request.getRating());
+        
         UserReview saved = reviewRepository.save(review);
         return UserReviewResponse.from(saved);
     }

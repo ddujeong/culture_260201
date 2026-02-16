@@ -7,7 +7,9 @@ import java.util.List;
 import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.RecommendationReason;
+import com.ddu.culture.entity.StaticContent;
 import com.ddu.culture.entity.UserReview;
+import com.ddu.culture.entity.VideoContent;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,8 +29,19 @@ public class ItemDetailResponse {
     private String img; // 이미지 URL
     private List<OTTInfo> otts; // 시청 가능한 OTT
     private double averageRating;
+    private double externalRating; // 👈 이게 있어야 프론트로 전달됩니다!
     private LocalDate releaseDate;
     private RecommendationReasonDto recommendationReason; // ⭐ 추가
+    private String director;
+    private String cast;
+    private Integer runtime;
+    private Integer totalSeasons;
+    private Integer totalEpisodes;
+    private String originCountry;
+    private String creator;    // 아티스트
+    private String albumName;  // 앨범명
+    private String spotifyTrackId;
+    private String itemType; // ⭐ 추가: "VIDEO" 또는 "STATIC" (DTYPE 역할)
     
     @Getter
     @AllArgsConstructor
@@ -47,10 +60,26 @@ public class ItemDetailResponse {
 		dto.genre = item.getGenre();
 		dto.category = item.getCategory();
 		dto.description = item.getDescription();
+		dto.externalRating = item.getExternalRating();
 		dto.img = item.getImg();
 		dto.otts = otts;
 		dto.averageRating = averageRating;
 		dto.releaseDate = item.getReleaseDate();
+		// ⭐ 음악 데이터(StaticContent)인 경우 필드 추가 매핑
+		if (item instanceof StaticContent sc) { // Java 17+ 패턴 매칭 사용
+			dto.itemType = "STATIC"; // 프론트와 약속된 타입명
+            dto.creator = sc.getCreator();
+            dto.albumName = sc.getAlbumName();
+            dto.spotifyTrackId = sc.getSpotifyTrackId();
+        }else if (item instanceof VideoContent vc) {
+        	dto.itemType = "VIDEO"; // 프론트와 약속된 타입명
+            dto.director = vc.getDirector();
+            dto.cast = vc.getCast();
+            dto.runtime = vc.getRuntime();
+            dto.totalSeasons = vc.getTotalSeasons();
+            dto.totalEpisodes = vc.getTotalEpisodes();
+            dto.originCountry = vc.getOriginCountry();
+        }
 		dto.recommendationReason =
 			    new RecommendationReasonDto(
 			        RecommendationReason.PREFERRED_GENRE,
