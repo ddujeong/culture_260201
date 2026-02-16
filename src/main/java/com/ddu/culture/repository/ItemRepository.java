@@ -31,4 +31,15 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 	@Query("SELECT v FROM VideoContent v WHERE v.category = :category AND v.genre IN :genres")
 	List<VideoContent> findVideoByCategoryAndGenres(@Param("category") Category category, @Param("genres") List<String> genres);
 
+	// 특정 클래스 타입(VideoContent.class 등)으로 찾기
+	// @Param을 추가하여 쿼리의 :type과 매칭시킵니다.
+    @Query("SELECT i FROM Item i WHERE TYPE(i) = :type")
+    List<Item> findByItemType(@Param("type") Class<? extends Item> type);
+    
+    // @Param을 추가하여 :type, :category와 매칭시킵니다.
+    @Query("SELECT i FROM Item i WHERE TYPE(i) = :type AND i.category = :category")
+    List<Item> findByItemTypeAndCategory(
+        @Param("type") Class<? extends Item> type, 
+        @Param("category") Category category
+    );
 }

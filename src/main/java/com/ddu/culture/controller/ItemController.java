@@ -42,4 +42,14 @@ public class ItemController {
         ItemDetailResponse response = itemService.getItemDetail(id, userId);
         return ResponseEntity.ok(response);
     }
+	@GetMapping
+	public ResponseEntity<List<ItemSummaryResponse>> getItems(
+	        @RequestParam(required = false, defaultValue = "ALL", name = "type") String type,
+	        @RequestParam(required = false, defaultValue = "ALL", name = "category") String category,
+	        @RequestParam(required = false, defaultValue = "ALL", name = "genre") String genre) {
+	    
+	    // type(VIDEO, STATIC)과 category(MOVIE, DRAMA 등)를 모두 서비스에 전달
+	    List<ItemSummaryResponse> items = itemService.getItemsByFilter(type, category, genre);
+	    return ResponseEntity.ok(items);
+	}
 }
