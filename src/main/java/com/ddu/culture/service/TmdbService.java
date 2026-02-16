@@ -9,8 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.ddu.culture.entity.Actor;
 import com.ddu.culture.entity.Category;
+import com.ddu.culture.entity.Director;
 import com.ddu.culture.entity.Item;
+import com.ddu.culture.entity.Season;
 import com.ddu.culture.entity.VideoContent;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.VideoContentRepository;
@@ -135,26 +138,49 @@ public class TmdbService {
             Map<String, Object> credits = (Map<String, Object>) details.get("credits");
             if (credits != null) {
                 List<Map<String, Object>> castList = (List<Map<String, Object>>) credits.get("cast");
-                String castNames = castList.stream()
-                        .limit(5)
-                        .map(c -> (String) c.get("name"))
-                        .collect(Collectors.joining(", "));
-                video.setCast(castNames);
+                if (castList != null) {
+                    video.getActors().clear(); // 기존 데이터 초기화
+                    castList.stream().limit(8).forEach(c -> {
+                        String name = (String) c.get("name");
+                        String originalName = (String) c.get("original_name");
+                        String pPath = (String) c.get("profile_path");
 
+                        Actor actor = new Actor();
+                        actor.setName((name != null && name.matches(".*[\\u4e00-\\u9fa5].*")) ? originalName : name);
+                        actor.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
+                        actor.setVideoContent(video);
+                        video.getActors().add(actor);
+                    });
+                }
+                video.getDirectors().clear();
                 // 2. 감독(Director / Created By) 추출
                 if ("movie".equals(type)) {
                     List<Map<String, Object>> crewList = (List<Map<String, Object>>) credits.get("crew");
-                    String director = crewList.stream()
-                            .filter(c -> "Director".equals(c.get("job")))
-                            .map(c -> (String) c.get("name"))
-                            .findFirst().orElse("Unknown");
-                    video.setDirector(director);
-                    video.setRuntime((Integer) details.get("runtime"));
+                    crewList.stream()
+                    .filter(c -> "Director".equals(c.get("job")))
+                    .limit(2) // 보통 1~2명
+                    .forEach(c -> {
+                        Director director = new Director();
+                        String name = (String) c.get("name");
+                        String pPath = (String) c.get("profile_path");
+                        director.setName((name != null && name.matches(".*[\\u4e00-\\u9fa5].*")) ? (String)c.get("original_name") : name);
+                        director.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
+                        director.setVideoContent(video);
+                        video.getDirectors().add(director);
+                    });
                 } else {
                     List<Map<String, Object>> createdBy = (List<Map<String, Object>>) details.get("created_by");
-                    if (createdBy != null && !createdBy.isEmpty()) {
-                        video.setDirector((String) createdBy.get(0).get("name"));
+                   if (createdBy != null) {
+                        createdBy.forEach(c -> {
+                            Director director = new Director();
+                            director.setName((String) c.get("name"));
+                            String pPath = (String) c.get("profile_path");
+                            director.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
+                            director.setVideoContent(video);
+                            video.getDirectors().add(director);
+                        });
                     }
+                    
                     video.setTotalSeasons((Integer) details.get("number_of_seasons"));
                     video.setTotalEpisodes((Integer) details.get("number_of_episodes"));
                 }
@@ -168,11 +194,52 @@ public class TmdbService {
                 
                 if (koProviders != null && koProviders.containsKey("flatrate")) {
                     List<Map<String, Object>> flatrate = (List<Map<String, Object>>) koProviders.get("flatrate");
-                    String providers = flatrate.stream()
+                    String cleanProviders = flatrate.stream()
                             .map(p -> (String) p.get("provider_name"))
+                            .map(name -> {
+                                // 핵심 브랜드명만 남기고 정제
+                                if (name.contains("Netflix")) return "Netflix";
+                                if (name.contains("Disney")) return "Disney+";
+                                if (name.contains("Apple TV")) return "Apple TV+";
+                                if (name.contains("Watcha")) return "왓챠";
+                                if (name.contains("Wavve")) return "웨이브";
+                                if (name.contains("TVING")) return "티빙"; // 👈 티빙 추가
+                                if (name.contains("Coupang")) return "쿠팡플레이";
+                                if (name.contains("Amazon Prime")) return "Amazon Prime Video";
+                                if (name.contains("Naver")) return "네이버 시리즈온";
+                                return name;
+                            })
+                            .distinct() // 중복 제거
                             .collect(Collectors.joining(", "));
-                    video.setOttProviders(providers);
+                    video.setOttProviders(cleanProviders);
                 }
+            }
+            if ("tv".equals(type)) {
+                List<Map<String, Object>> seasonsData = (List<Map<String, Object>>) details.get("seasons");
+                if (seasonsData != null) {
+                    // 기존 시즌 데이터가 있다면 교체하기 위해 비움 (선택 사항)
+                    video.getSeasons().clear();
+
+                    for (Map<String, Object> s : seasonsData) {
+                        // 'Special' 시즌(0번)을 제외하고 싶다면 아래 조건 추가
+                        // if ((Integer) s.get("season_number") == 0) continue;
+                    if (Integer.valueOf(0).equals(s.get("season_number"))) continue;
+                        Season season = new Season();
+                        season.setSeasonNumber((Integer) s.get("season_number"));
+                        season.setName((String) s.get("name"));
+                        season.setOverview((String) s.get("overview")); // 상세 줄거리
+                        season.setEpisodeCount((Integer) s.get("episode_count"));
+                        season.setAirDate((String) s.get("air_date"));
+                        
+                        String pPath = (String) s.get("poster_path");
+                        if (pPath != null) {
+                            season.setPosterPath("https://image.tmdb.org/t/p/w300" + pPath);
+                        }
+                        
+                        season.setVideoContent(video);
+                        video.getSeasons().add(season);
+                    }
+                }  
             }
         } catch (Exception e) {
             System.err.println(tmdbId + " 상세 정보 수집 실패: " + e.getMessage());
@@ -200,5 +267,24 @@ public class TmdbService {
             case 10749 -> "로맨스";
             default -> "기타";
         };
+    }
+ // 출연진/감독 이름 정제 유틸리티 메소드
+    private String sanitizeName(String name) {
+        if (name == null) return "Unknown";
+        
+        // 한글이 포함되어 있다면 그대로 사용
+        if (name.matches(".*[ㄱ-ㅎㅏ-ㅣ가-힣].*")) {
+            return name;
+        }
+        
+        // 한글이 없고 한자가 포함되어 있다면? (중국어 이름 등)
+        if (name.matches(".*[\\u4e00-\\u9fa5].*")) {
+            // 이 경우, TMDB에서 해당 인물의 영문 이름을 다시 가져와야 하지만, 
+            // 간단하게는 "알 수 없음" 처리하거나 한자만 제거할 수 있습니다.
+            return ""; 
+        }
+        
+        // 영어 이름은 그대로 유지
+        return name;
     }
 }

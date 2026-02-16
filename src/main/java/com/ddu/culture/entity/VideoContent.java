@@ -1,8 +1,13 @@
 package com.ddu.culture.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -14,10 +19,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VideoContent extends Item {
     
-    private String director;      // 감독 (TV는 Created By)
+    //private String director;      // 감독 (TV는 Created By)
     
-    @Column(length = 1000)
-    private String cast;          // 주요 출연진
+    //@Column(length = 1000)
+    //private String cast;          // 주요 출연진
     
     private String ottProviders;  // 시청 가능 OTT (Netflix, Disney Plus 등)
     
@@ -28,4 +33,16 @@ public class VideoContent extends Item {
     private Integer totalEpisodes;
     
     private String originCountry; // 제작 국가
+    
+ // VideoContent.java 내부에 추가
+    @OneToMany(mappedBy = "videoContent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Season> seasons = new ArrayList<>();
+    
+    // 🌟 출연진 정보 (추가)
+    @OneToMany(mappedBy = "videoContent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Actor> actors = new ArrayList<>();
+
+    // 🌟 감독 정보 (추가)
+    @OneToMany(mappedBy = "videoContent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Director> directors = new ArrayList<>();
 }

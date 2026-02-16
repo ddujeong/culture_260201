@@ -74,8 +74,8 @@ public class RecommendationService {
         List<? extends Item> candidateItems;
         
         if (targetGenres != null && !targetGenres.isEmpty()) {
-        	candidateItems = itemRepository.findVideoByGenres(targetGenres);
-        	
+            // ✅ 카테고리(MOVIE)와 장르 리스트를 모두 만족하는 아이템만 조회해야 함
+            candidateItems = itemRepository.findByCategoryAndGenreIn(category, targetGenres);
         } else {
             // targetGenres가 없으면 유저 선호 장르 + 최근 활동 장르 위주로 조회
         	List<String> fetchGenres = new ArrayList<>(Stream.concat(preferredGenres.stream(), actionCounts.keySet().stream()).collect(Collectors.toSet()));

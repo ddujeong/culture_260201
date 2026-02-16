@@ -32,8 +32,8 @@ public class ItemDetailResponse {
     private double externalRating; // 👈 이게 있어야 프론트로 전달됩니다!
     private LocalDate releaseDate;
     private RecommendationReasonDto recommendationReason; // ⭐ 추가
-    private String director;
-    private String cast;
+    private List<PersonDto> actors;    
+    private List<PersonDto> directors;
     private Integer runtime;
     private Integer totalSeasons;
     private Integer totalEpisodes;
@@ -42,7 +42,24 @@ public class ItemDetailResponse {
     private String albumName;  // 앨범명
     private String spotifyTrackId;
     private String itemType; // ⭐ 추가: "VIDEO" 또는 "STATIC" (DTYPE 역할)
+    private List<SeasonDto> seasons;
     
+    @Getter @AllArgsConstructor
+    public static class PersonDto {
+        private String name;
+        private String profilePath;
+    }
+
+    // 시즌 정보를 담을 내부 클래스
+    @Getter @AllArgsConstructor
+    public static class SeasonDto {
+        private int seasonNumber;
+        private String name;
+        private String overview;
+        private String posterPath;
+        private int episodeCount;
+        private String airDate;
+    }
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
@@ -73,8 +90,23 @@ public class ItemDetailResponse {
             dto.spotifyTrackId = sc.getSpotifyTrackId();
         }else if (item instanceof VideoContent vc) {
         	dto.itemType = "VIDEO"; // 프론트와 약속된 타입명
-            dto.director = vc.getDirector();
-            dto.cast = vc.getCast();
+        	// 🌟 배우 리스트 매핑 (Entity -> DTO)
+            dto.actors = vc.getActors().stream()
+                .map(a -> new PersonDto(a.getName(), a.getProfilePath()))
+                .toList();
+
+            // 🌟 감독 리스트 매핑
+            dto.directors = vc.getDirectors().stream()
+                .map(d -> new PersonDto(d.getName(), d.getProfilePath()))
+                .toList();
+            
+            // 🌟 시즌 리스트 매핑
+            dto.seasons = vc.getSeasons().stream()
+                .map(s -> new SeasonDto(
+                    s.getSeasonNumber(), s.getName(), s.getOverview(), 
+                    s.getPosterPath(), s.getEpisodeCount(), s.getAirDate()
+                ))
+                .toList();
             dto.runtime = vc.getRuntime();
             dto.totalSeasons = vc.getTotalSeasons();
             dto.totalEpisodes = vc.getTotalEpisodes();

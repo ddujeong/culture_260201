@@ -1,5 +1,7 @@
 package com.ddu.culture.dto;
 
+import java.util.stream.Collectors;
+
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.RecommendationReason;
 import com.ddu.culture.entity.StaticContent;
@@ -38,10 +40,22 @@ public class RecommendationDto {
         dto.reasonMessage = reasonType.getDescription();
         dto.img = item.getImg();
 
-        // ⭐ 음악(StaticContent)인 경우 추가 필드 매핑
         if (item instanceof VideoContent vc) {
-            dto.director = vc.getDirector();
-            dto.cast = vc.getCast();
+            // 🌟 엔티티의 Director 리스트에서 이름만 뽑아 쉼표로 합치기
+            if (vc.getDirectors() != null) {
+                dto.director = vc.getDirectors().stream()
+                        .map(d -> d.getName())
+                        .collect(Collectors.joining(", "));
+            }
+            
+            // 🌟 엔티티의 Actor 리스트에서 이름만 뽑아 쉼표로 합치기 (최대 3명 정도가 적당)
+            if (vc.getActors() != null) {
+                dto.cast = vc.getActors().stream()
+                        .map(a -> a.getName())
+                        .limit(3) // 추천 리스트는 공간이 좁으니 3명까지만!
+                        .collect(Collectors.joining(", "));
+            }
+            
         } else if (item instanceof StaticContent sc) {
             dto.creator = sc.getCreator();
         }
