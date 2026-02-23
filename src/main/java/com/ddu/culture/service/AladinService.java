@@ -30,52 +30,65 @@ public class AladinService {
 
     @Transactional
     public void fetchPopularBooks() {
-        // 베스트셀러(Bestseller) API 호출
-        String url = String.format("http://www.aladin.co.kr/ttb/api/ItemList.aspx?ttbkey=%s&QueryType=Bestseller&MaxResults=50&start=1&SearchTarget=Book&output=js&Version=20131101", 
-                                   apiKey);
+        // 1. 최신 베스트셀러 1페이지 (무조건 동기화)
+        fetchFromAladin("Bestseller", 1);
+        
+        // 2. 과거 데이터 보충을 위해 랜덤하게 다른 페이지 수집 (2~10페이지 중 하나)
+        int randomPage = (int) (Math.random() * 9) + 2;
+        System.out.println("📚 [과거 도서 보충] 베스트셀러 " + randomPage + "페이지 수집 시작...");
+        fetchFromAladin("Bestseller", randomPage);
+    }
+
+    private void fetchFromAladin(String queryType, int startPage) {
+        String url = String.format(
+            "http://www.aladin.co.kr/ttb/api/ItemList.aspx?ttbkey=%s&QueryType=%s&MaxResults=50&start=%d&SearchTarget=Book&output=js&Version=20131101",
+            apiKey, queryType, startPage
+        );
 
         try {
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            if (response == null || !response.containsKey("item")) return;
+
             List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("item");
 
             for (Map<String, Object> bookMap : items) {
-                String title = (String) bookMap.get("title");
-                if (itemRepository.existsByTitle(title)) continue;
+                String isbn = (String) bookMap.get("isbn13");
+                if (isbn == null || isbn.isEmpty()) continue;
 
-                // 1. Item이 아닌 StaticContent로 생성 (상속 구조 반영)
-                StaticContent book = new StaticContent();
-                book.setTitle(title);
+                // 🌟 ISBN 기반 Upsert 로직
+                StaticContent book = staticContentRepository.findByIsbn(isbn)
+                        .orElse(new StaticContent());
+
+                book.setTitle((String) bookMap.get("title"));
+                book.setIsbn(isbn);
+                book.setCategory(Category.BOOK);
+                book.setImg((String) bookMap.get("cover"));
+                book.setCreator((String) bookMap.get("author"));
+                book.setPublisher((String) bookMap.get("publisher"));
+                book.setGenre(parseBookGenre((String) bookMap.get("categoryName")));
+
+                // 평점 업데이트
                 Number reviewRank = (Number) bookMap.get("customerReviewRank");
                 if (reviewRank != null) {
                     book.setExternalRating(reviewRank.doubleValue());
                 }
-                book.setCategory(Category.BOOK);
-                book.setGenre(parseBookGenre((String) bookMap.get("categoryName")));
-                
-                // 2. 설명 정제 (HTML 제거 및 150자 제한)
+
+                // 설명 정제
                 String rawDesc = (String) bookMap.get("description");
                 if (rawDesc != null) {
                     String cleanDesc = rawDesc.replaceAll("<[^>]*>", "").trim();
                     book.setDescription(cleanDesc.length() > 150 ? cleanDesc.substring(0, 147) + "..." : cleanDesc);
                 }
-                
-                book.setImg((String) bookMap.get("cover"));
-
-                // 3. StaticContent 전용 필드 채우기
-                book.setCreator((String) bookMap.get("author"));    // 저자
-                book.setPublisher((String) bookMap.get("publisher")); // 출판사
-                book.setIsbn((String) bookMap.get("isbn13"));        // ISBN
 
                 String pubDate = (String) bookMap.get("pubDate");
                 if (pubDate != null && !pubDate.isEmpty()) {
                     book.setReleaseDate(LocalDate.parse(pubDate));
                 }
 
-                // 4. 저장 (staticContentRepository 사용)
                 staticContentRepository.save(book);
             }
         } catch (Exception e) {
-            System.err.println("알라딘 데이터 수집 중 오류: " + e.getMessage());
+            System.err.println("❌ 알라딘 [" + queryType + " P." + startPage + "] 수집 중 오류: " + e.getMessage());
         }
     }
 

@@ -123,7 +123,115 @@ public class TmdbService {
             System.err.println("TMDB TV 데이터 수집 중 오류 발생: " + e.getMessage());
         }
     }
+    @Transactional
+    public void fetchKoreanTvShows(int page) {
+        // 💡 discover API를 사용해서 '한국(KR)' + '예능(10764, 10767)'만 필터링
+        String url = String.format(
+            "https://api.themoviedb.org/3/discover/tv?api_key=%s&language=ko-KR&page=%d" +
+            "&with_genres=10764,10767&with_origin_country=KR&sort_by=popularity.desc",
+            apiKey.trim(), page
+        );
 
+        try {
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+
+            for (Map<String, Object> tv : results) {
+                String name = (String) tv.get("name");
+                Long tmdbId = ((Number) tv.get("id")).longValue();
+
+                if (itemRepository.existsByTitle(name)) continue;
+
+                VideoContent video = new VideoContent();
+                video.setTitle(name);
+                Number voteAverage = (Number) tv.get("vote_average");
+                if (voteAverage != null) {
+                    video.setExternalRating(voteAverage.doubleValue());
+                }
+                List<Integer> genreIds = (List<Integer>) tv.get("genre_ids");
+                video.setCategory(determineTvCategory(genreIds));
+                video.setGenre(mapTmdbGenre(genreIds));
+                video.setDescription((String) tv.get("overview"));
+                
+                String airDate = (String) tv.get("first_air_date");
+                if (airDate != null && !airDate.isEmpty()) {
+                    video.setReleaseDate(LocalDate.parse(airDate));
+                }
+                
+                video.setImg("https://image.tmdb.org/t/p/w500" + tv.get("poster_path"));
+                video.setOriginCountry(((List<String>) tv.get("origin_country")).stream().findFirst().orElse("KR"));
+                updateVideoDetails(video, tmdbId, "tv");
+                videoContentRepository.save(video);
+            }
+        } catch (Exception e) {
+            System.err.println("한국 예능 수집 중 에러: " + e.getMessage());
+        }
+    }
+    @Transactional
+    public void fetchPopularAnimations(int page) {
+        // 💡 영화 중에서 애니메이션(장르 16)만 인기순으로 가져오기
+        String movieUrl = String.format(
+            "https://api.themoviedb.org/3/discover/movie?api_key=%s&language=ko-KR&page=%d" +
+            "&with_genres=16&sort_by=popularity.desc",
+            apiKey.trim(), page
+        );
+
+        // 💡 TV 시리즈 중에서 애니메이션(장르 16)만 인기순으로 가져오기
+        String tvUrl = String.format(
+            "https://api.themoviedb.org/3/discover/tv?api_key=%s&language=ko-KR&page=%d" +
+            "&with_genres=16&sort_by=popularity.desc",
+            apiKey.trim(), page
+        );
+
+        // 수집 로직 실행 (이미 만들어두신 fetchPopularMovies나 fetchPopularTvShows의 내부 로직과 유사하게 처리)
+        fetchAndSaveFromUrl(movieUrl, "movie");
+        fetchAndSaveFromUrl(tvUrl, "tv");
+    }
+
+    // 공통 로직 처리를 위한 private 메서드 (기존 코드 구조에 맞춰 적절히 구현)
+    private void fetchAndSaveFromUrl(String url, String type) {
+        try {
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+            
+            for (Map<String, Object> data : results) {
+            	String title = "movie".equals(type) ? (String) data.get("title") : (String) data.get("name");
+                Long tmdbId = ((Number) data.get("id")).longValue();
+
+                if (itemRepository.existsByTitle(title)) continue;
+
+                VideoContent video = new VideoContent();
+                video.setTitle(title);
+                Number voteAverage = (Number) data.get("vote_average");
+                if (voteAverage != null) {
+                    video.setExternalRating(voteAverage.doubleValue());
+                }
+                List<Integer> genreIds = (List<Integer>) data.get("genre_ids");
+                video.setCategory(Category.ANIMATION);
+                video.setGenre(mapTmdbGenre(genreIds));
+                video.setDescription((String) data.get("overview"));
+                
+                String dateKey = "movie".equals(type) ? "release_date" : "first_air_date";
+                String dateStr = (String) data.get(dateKey);
+                if (dateStr != null && !dateStr.isEmpty()) {
+                    video.setReleaseDate(LocalDate.parse(dateStr));
+                }
+                
+                video.setImg("https://image.tmdb.org/t/p/w500" + data.get("poster_path"));
+                if (data.containsKey("origin_country")) {
+                    List<String> countries = (List<String>) data.get("origin_country");
+                    video.setOriginCountry(countries.stream().findFirst().orElse("Unknown"));
+                }
+
+                // 상세 정보 업데이트 (credits, providers 등)
+                updateVideoDetails(video, tmdbId, type);
+                
+                videoContentRepository.save(video);
+            }
+        } catch (Exception e) {
+            System.err.println("애니메이션 수집 중 오류: " + e.getMessage());
+        }
+    }
     @Transactional
     public void updateVideoDetails(VideoContent video, Long tmdbId, String type) {
         String url = String.format(
@@ -249,7 +357,7 @@ public class TmdbService {
     private Category determineTvCategory(List<Integer> genreIds) {
         if (genreIds == null) return Category.DRAMA;
         if (genreIds.contains(16)) return Category.ANIMATION;
-        if (genreIds.contains(10764) || genreIds.contains(10767)) return Category.TV_SHOW;
+        if (genreIds.contains(10764) || genreIds.contains(10767)|| genreIds.contains(10763)) return Category.TV_SHOW;
         return Category.DRAMA;
     }
 

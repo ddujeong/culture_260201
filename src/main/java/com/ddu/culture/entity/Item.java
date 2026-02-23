@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.CascadeType;
@@ -61,6 +62,9 @@ public class Item {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    
+    @LastModifiedDate
+    private LocalDateTime updatedAt; // 👈 새로 추가
     
     @Column(length = 2000)
     private String img;

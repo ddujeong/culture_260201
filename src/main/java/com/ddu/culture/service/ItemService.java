@@ -71,58 +71,57 @@ public class ItemService {
     }
 	// ... 상단 어노테이션 및 필드 생략 ...
 
-    /**
-     * Type -> Category -> Genre 계층 구조 필터링
-     */
-    public List<ItemSummaryResponse> getItemsByFilter(String type, String category, String genre) {
-        List<Item> items;
+	/**
+	 * Type -> Category -> Genre 계층 구조 + 검색(Search) + 정렬(Sort) 필터링
+	 */
+	public List<ItemSummaryResponse> getItemsByFilter(String type, String category, String genre, String search, String sort) {
+	    List<Item> items;
 
-        // 1. 대분류 (Item Type: VIDEO, STATIC) 결정
-        Class<? extends Item> itemClass = null;
-        if ("VIDEO".equalsIgnoreCase(type)) {
-            itemClass = VideoContent.class;
-        } else if ("STATIC".equalsIgnoreCase(type)) {
-            itemClass = StaticContent.class;
-        }
+	    // 1. 대분류 (Item Type) 결정
+	    Class<? extends Item> itemClass = null;
+	    if ("VIDEO".equalsIgnoreCase(type)) itemClass = VideoContent.class;
+	    else if ("STATIC".equalsIgnoreCase(type)) itemClass = StaticContent.class;
 
-        // 2. 중분류 (Category: MOVIE, DRAMA, ANIMATION 등) 결정
-        Category cat = null;
-        if (category != null && !"ALL".equalsIgnoreCase(category)) {
-            try {
-                cat = Category.valueOf(category.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                cat = null;
-            }
-        }
+	    // 2. 중분류 (Category) 결정
+	    Category cat = null;
+	    if (category != null && !"ALL".equalsIgnoreCase(category)) {
+	        try { cat = Category.valueOf(category.toUpperCase()); } catch (Exception e) {}
+	    }
 
-        // 3. 필터 조합에 따른 Repository 호출 (장르는 ALL이 아닐 때만 필터링)
-        boolean hasGenre = genre != null && !"ALL".equalsIgnoreCase(genre);
+	    // 3. Repository 기초 조회 (기존 로직 유지)
+	    if (itemClass != null && cat != null) {
+	        items = itemRepository.findByItemTypeAndCategory(itemClass, cat);
+	    } else if (itemClass != null) {
+	        items = itemRepository.findByItemType(itemClass);
+	    } else if (cat != null) {
+	        items = itemRepository.findByCategory(cat);
+	    } else {
+	        items = itemRepository.findAll();
+	    }
 
-        if (itemClass != null && cat != null) {
-            // [Type + Category] 가 확정된 상태
-            items = itemRepository.findByItemTypeAndCategory(itemClass, cat);
-        } else if (itemClass != null) {
-            // [Type] 만 확정된 상태
-            items = itemRepository.findByItemType(itemClass);
-        } else if (cat != null) {
-            // [Category] 만 확정된 상태 (Type 무관)
-            items = itemRepository.findByCategory(cat);
-        } else {
-            // [전체보기]
-            items = itemRepository.findAll();
-        }
-
-        // 4. 장르(Genre) 후처리 필터링 (DB에서 LIKE 쿼리로 가져와도 되지만, Stream으로 처리하면 더 유연함)
-        if (hasGenre) {
-            items = items.stream()
-                    .filter(i -> i.getGenre() != null && i.getGenre().contains(genre))
-                    .toList();
-        }
-
-        return items.stream()
-                .map(ItemSummaryResponse::from)
-                .toList();
-    }
+	    // 4. Stream을 이용한 검색, 장르 필터링 및 정렬 처리
+	    return items.stream()
+	            // [장르 필터링]
+	            .filter(i -> genre == null || "ALL".equalsIgnoreCase(genre) || 
+	                   (i.getGenre() != null && i.getGenre().contains(genre)))
+	            // [검색어 필터링] 제목 기준
+	            .filter(i -> search == null || search.isBlank() || 
+	                   i.getTitle().toLowerCase().contains(search.toLowerCase()))
+	            // [정렬 처리]
+	            .sorted((a, b) -> {
+	                if ("rating".equalsIgnoreCase(sort)) {
+	                    // 별점 높은 순 (Double 비교)
+	                    return Double.compare(b.getExternalRating(), a.getExternalRating());
+	                } else if ("oldest".equalsIgnoreCase(sort)) {
+	                    // 오래된 등록 순
+	                    return a.getCreatedAt().compareTo(b.getCreatedAt());
+	                }
+	                // 기본: 최신 등록 순 (newest)
+	                return b.getCreatedAt().compareTo(a.getCreatedAt());
+	            })
+	            .map(ItemSummaryResponse::from)
+	            .toList();
+	}
 	private ItemDetailResponse.OTTInfo createOttInfo(String name, String title) {
 		String encodedTitle = java.net.URLEncoder.encode(title, java.nio.charset.StandardCharsets.UTF_8);
 		

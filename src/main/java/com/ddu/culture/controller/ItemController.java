@@ -46,10 +46,12 @@ public class ItemController {
 	public ResponseEntity<List<ItemSummaryResponse>> getItems(
 	        @RequestParam(required = false, defaultValue = "ALL", name = "type") String type,
 	        @RequestParam(required = false, defaultValue = "ALL", name = "category") String category,
-	        @RequestParam(required = false, defaultValue = "ALL", name = "genre") String genre) {
+	        @RequestParam(required = false, defaultValue = "ALL", name = "genre") String genre,
+	        @RequestParam(required = false, name = "serch") String search,
+	        @RequestParam(defaultValue = "newest", name = "sort") String sort) {
 	    
 	    // type(VIDEO, STATIC)과 category(MOVIE, DRAMA 등)를 모두 서비스에 전달
-	    List<ItemSummaryResponse> items = itemService.getItemsByFilter(type, category, genre);
+	    List<ItemSummaryResponse> items = itemService.getItemsByFilter(type, category, genre, search, sort);
 	    return ResponseEntity.ok(items);
 	}
 }

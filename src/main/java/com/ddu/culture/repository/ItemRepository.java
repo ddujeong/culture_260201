@@ -1,5 +1,6 @@
 package com.ddu.culture.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,4 +43,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
         @Param("type") Class<? extends Item> type, 
         @Param("category") Category category
     );
+    
+ // 오늘 날짜(startDate) 이후로 생성/수정된 데이터가 있는지 확인
+    boolean existsByUpdatedAtAfter(LocalDateTime startDate);
+    
+    boolean existsByCategoryAndUpdatedAtAfter(Category category, LocalDateTime date);
 }

@@ -11,5 +11,6 @@ import java.util.Optional;
 @Repository
 public interface StaticContentRepository extends JpaRepository<StaticContent, Long> {
 
-	Optional<StaticContent> findBySpotifyTrackId(String spotifyTrackId);
-}
+	Optional<StaticContent> findByIsbn(String isbn);
+    Optional<StaticContent> findBySpotifyTrackId(String spotifyTrackId);
+    boolean existsBySpotifyTrackId(String spotifyTrackId);}
