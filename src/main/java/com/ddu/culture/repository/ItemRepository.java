@@ -48,4 +48,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     boolean existsByUpdatedAtAfter(LocalDateTime startDate);
     
     boolean existsByCategoryAndUpdatedAtAfter(Category category, LocalDateTime date);
+    
+ // ItemRepository에 추가
+    List<Item> findTop100ByOrderByCreatedAtDesc();
 }

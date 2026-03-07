@@ -1,6 +1,7 @@
 package com.ddu.culture.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -47,4 +48,6 @@ public interface UserActionRepository extends JpaRepository<UserAction, Long>{
            "GROUP BY ua.item.genre")
     List<Object[]> countGenresByUser(@Param("userId") Long userId,
                                      @Param("actionType") ActionType actionType);
+
+    Optional<UserAction> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 }
