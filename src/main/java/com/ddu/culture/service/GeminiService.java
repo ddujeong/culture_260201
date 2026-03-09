@@ -40,34 +40,6 @@ public class GeminiService {
     private final UserReviewRepository userReviewRepository;
     private final UserRepository userRepository;
 
-    public Map<String, String> inferGenresBulk(List<String> trackList) {
-        // 1. 요청 데이터를 하나의 문자열로 합침
-        String tracksData = String.join("\n", trackList);
-        
-        String prompt = "음악 전문가로서 다음 노래들의 장르를 분석해줘.\n"
-                + "장르 후보: [K-Pop, Pop, Hip-Hop, R&B, Rock, EDM, Jazz, Ballad]\n"
-                + "응답 형식: '노래제목 === 장르'\n"
-                + "설명 없이 결과만 리스트로 출력해.\n\n"
-                + "노래 리스트:\n" + tracksData;
-
-        Map<String, String> resultMap = new HashMap<>();
-        try {
-            GenerateContentResponse response = geminiClient.models.generateContent("gemini-2.5-flash", prompt, null);
-            String resultText = response.text().trim();
-            
-            // 2. 응답 파싱 (제목:장르 형태)
-            String[] lines = resultText.split("\n");
-            for (String line : lines) {
-                if (line.contains("===")) {
-                    String[] parts = line.split("===", 2);
-                    resultMap.put(parts[0].trim(), parts[1].trim());
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("❌ 벌크 장르 분석 실패: " + e.getMessage());
-        }
-        return resultMap;
-    }
     private Category inferCategoryFromMessage(String message) {
 
         String msg = message.toLowerCase();
@@ -86,9 +58,6 @@ public class GeminiService {
 
         if (msg.contains("책") || msg.contains("소설"))
             return Category.BOOK;
-
-        if (msg.contains("노래") || msg.contains("음악"))
-            return Category.MUSIC;
 
         return null;
     }

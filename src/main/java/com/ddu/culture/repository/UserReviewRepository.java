@@ -36,5 +36,13 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
     	                                         @Param("category") Category category);
 
         boolean existsByUserIdAndItemId(Long userId, Long itemId);
+        
+        @Query("""
+        		SELECT r.item.id, AVG(r.rating)
+        		FROM UserReview r
+        		WHERE r.item.id IN :itemIds
+        		GROUP BY r.item.id
+        		""")
+        		List<Object[]> findAvgRatingsByItemIds(List<Long> itemIds);
 
 }

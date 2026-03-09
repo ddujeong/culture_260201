@@ -13,5 +13,4 @@ public class HomeRecommendationResponse {
     private RecommendationResponse entertainment;   // 예능
     private RecommendationResponse animation;     // 애니메이션
     private RecommendationResponse book;          // 책
-    private RecommendationResponse music;         // 음악
 }

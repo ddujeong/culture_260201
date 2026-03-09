@@ -11,7 +11,4 @@ public interface StaticContentRepository extends JpaRepository<StaticContent, Lo
 
 	Optional<StaticContent> findByIsbn(String isbn);
 
-	Optional<StaticContent> findBySpotifyTrackId(String spotifyTrackId);
-
-	boolean existsBySpotifyTrackId(String spotifyTrackId);
 }

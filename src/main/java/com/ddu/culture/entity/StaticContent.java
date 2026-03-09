@@ -20,7 +20,4 @@ public class StaticContent extends Item {
     private String isbn;
     private Integer pageCount;
     
-    // 음악 전용
-    private String albumName;
-    private String spotifyTrackId; // 스포티파이 고유 ID (중복 방지용)
 }

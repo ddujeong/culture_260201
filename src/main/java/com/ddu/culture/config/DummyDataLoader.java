@@ -11,7 +11,6 @@ import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.service.AladinService;
-import com.ddu.culture.service.SpotifyService;
 import com.ddu.culture.service.TmdbService;
 
 import jakarta.transaction.Transactional;
@@ -25,7 +24,6 @@ public class DummyDataLoader implements CommandLineRunner {
     private final ItemRepository itemRepository;
     private final TmdbService tmdbService;
     private final AladinService aladinService;
-    private final SpotifyService spotifyService;
 
     @Override
     public void run(String... args) {
@@ -62,15 +60,6 @@ public class DummyDataLoader implements CommandLineRunner {
         } else {
             System.out.println("✅ 도서는 이미 최신 상태입니다.");
         }
-
-        // 3. 음악 (Spotify)
-        if (force || !hasUpdatedToday(Category.MUSIC, startOfToday)) {
-            System.out.println("🎵 음악 최신화 중...");
-            spotifyService.fetchPopularMusic();
-        } else {
-            System.out.println("✅ 음악은 이미 최신 상태입니다.");
-        }
-
         System.out.println("✨ 모든 동기화 프로세스 종료");
     }
 

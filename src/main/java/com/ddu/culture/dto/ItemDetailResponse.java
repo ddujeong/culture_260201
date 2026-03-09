@@ -38,11 +38,11 @@ public class ItemDetailResponse {
     private Integer totalSeasons;
     private Integer totalEpisodes;
     private String originCountry;
-    private String creator;    // 아티스트
-    private String albumName;  // 앨범명
-    private String spotifyTrackId;
     private String itemType; // ⭐ 추가: "VIDEO" 또는 "STATIC" (DTYPE 역할)
     private List<SeasonDto> seasons;
+    
+    private String creator;
+    private String publisher;
     
     @Getter @AllArgsConstructor
     public static class PersonDto {
@@ -85,9 +85,8 @@ public class ItemDetailResponse {
 		// ⭐ 음악 데이터(StaticContent)인 경우 필드 추가 매핑
 		if (item instanceof StaticContent sc) { // Java 17+ 패턴 매칭 사용
 			dto.itemType = "STATIC"; // 프론트와 약속된 타입명
-            dto.creator = sc.getCreator();
-            dto.albumName = sc.getAlbumName();
-            dto.spotifyTrackId = sc.getSpotifyTrackId();
+			dto.creator = sc.getCreator();
+			dto.publisher = sc.getPublisher();
         }else if (item instanceof VideoContent vc) {
         	dto.itemType = "VIDEO"; // 프론트와 약속된 타입명
         	// 🌟 배우 리스트 매핑 (Entity -> DTO)

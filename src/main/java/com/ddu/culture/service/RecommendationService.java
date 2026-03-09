@@ -20,6 +20,7 @@ import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.RecommendationReason;
 import com.ddu.culture.entity.UserAction;
 import com.ddu.culture.entity.UserPreferences;
+import com.ddu.culture.entity.VideoContent;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.UserActionRepository;
 import com.ddu.culture.repository.UserPreferencesRepository;
@@ -78,13 +79,26 @@ public class RecommendationService {
         } else {
             // targetGenres가 없으면 유저 선호 장르 + 최근 활동 장르 위주로 조회
         	List<String> fetchGenres = new ArrayList<>(Stream.concat(preferredGenres.stream(), actionCounts.keySet().stream()).collect(Collectors.toSet()));
-            candidateItems = itemRepository.findByCategoryAndGenreIn(category, fetchGenres);
+        	if (fetchGenres.isEmpty()) {
+        	    candidateItems = itemRepository.findTop10ByCategoryOrderByCreatedAtDesc(category);
+        	} else {
+        	    candidateItems = itemRepository.findByCategoryAndGenreIn(category, fetchGenres);
+        	}
         }
         System.out.println("조회된 후보군 수: " + candidateItems.size());
         candidateItems = candidateItems.stream()
                 .filter(item -> !viewedItemIds.contains(item.getId()))
                 .distinct()
                 .toList();
+        Map<Long, Double> avgRatings = userReviewRepository
+                .findAvgRatingsByItemIds(
+                        candidateItems.stream().map(Item::getId).toList()
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> (Double) r[1]
+                ));
         // 후보가 너무 적으면 해당 카테고리 최신작으로 보충
         if (candidateItems.size() < 5) {
             candidateItems = itemRepository.findTop10ByCategoryOrderByCreatedAtDesc(category);
@@ -94,25 +108,37 @@ public class RecommendationService {
         Map<String, Integer> genreCount = new HashMap<>();
         List<RecommendationDto> scoredItems = candidateItems.stream()
                 .map(item -> {
-                    double score = calculateScore(item, preferredGenres, actionCounts, preferredTags, dislikedGenres, dislikedTags);
-                    
+                	double score = calculateScore(item, preferredGenres, actionCounts,
+                            preferredTags, dislikedGenres, dislikedTags,
+                            avgRatings);                    
                     // 장르 반복 감점 (다양성 확보)
                     int count = genreCount.getOrDefault(item.getGenre(), 0);
                     score = Math.max(0.0, score - (count * 0.5));
                     genreCount.put(item.getGenre(), count + 1);
 
-                    return RecommendationDto.from(item, score, generateReasonType(item, preferredGenres, actionCounts));
+                    return RecommendationDto.from(
+                            item,
+                            score,
+                            generateReasonType(item, preferredGenres, actionCounts, avgRatings)
+                    );
                 })
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
-                .limit(8)
-                .toList();
+                .limit(20)
+                .collect(Collectors.toList());
+        Collections.shuffle(scoredItems);
+        int resultSize = Math.min(scoredItems.size(), 8);
 
-        return new RecommendationResponse(scoredItems);
+        return new RecommendationResponse(scoredItems.subList(0, resultSize));
     }
 	
 	// 점수 계산
-    private double calculateScore(Item item, List<String> preferredGenres, Map<String, Long> actionCounts,
-                                  List<String> userPreferredTags, List<String> userDislikedGenres, List<String> userDislikedTags) {
+    private double calculateScore(Item item,
+            List<String> preferredGenres,
+            Map<String, Long> actionCounts,
+            List<String> userPreferredTags,
+            List<String> userDislikedGenres,
+            List<String> userDislikedTags,
+            Map<Long, Double> avgRatings) {
 
         double score = 0.0;
 
@@ -121,9 +147,21 @@ public class RecommendationService {
         // 최근 행동 장르
         score += actionCounts.getOrDefault(item.getGenre(), 0L) * 2.0;
         // 평점
-        Double avg = userReviewRepository.findAvgRatingByItemId(item.getId());
-        double averageRating = avg != null ? avg : 0.0;
+        double averageRating = avgRatings.getOrDefault(item.getId(), 0.0);
         score += averageRating * 2.0;
+        if (item instanceof VideoContent video) {
+            if (video.getPopularity() != null) {
+                score += video.getPopularity() * 0.02;
+            }
+
+            if (video.getVoteCount() != null) {
+                score += Math.min(video.getVoteCount() * 0.001, 1.0);
+            }
+        }
+        if (item.getReleaseDate() != null) {
+            int year = item.getReleaseDate().getYear();
+            if (year >= 2023) score += 0.5;
+        }
         // 조회수
         long viewCount = userActionRepository.countByItemId(item.getId());
         score += viewCount * 0.05;
@@ -144,13 +182,13 @@ public class RecommendationService {
 	
 	// 추천 이유 생성
 	public RecommendationReason generateReasonType(
-	        Item item,
+			Item item,
 	        List<String> preferredGenres,
-	        Map<String, Long> actionCounts
+	        Map<String, Long> actionCounts,
+	        Map<Long, Double> avgRatings
 	) {
-	    Double avg = userReviewRepository.findAvgRatingByItemId(item.getId());
-	    double averageRating = avg != null ? avg : 0.0;
-
+	    double averageRating = avgRatings.getOrDefault(item.getId(), 0.0);
+	    
 	    if (averageRating >= 4.5) {
 	        return RecommendationReason.HIGH_RATING;
 	    }
@@ -182,8 +220,15 @@ public class RecommendationService {
 	                action -> action.getItem().getGenre(),
 	                Collectors.counting()
 	            ));
+	    Map<Long, Double> avgRatings =
+	            userReviewRepository.findAvgRatingsByItemIds(List.of(item.getId()))
+	                .stream()
+	                .collect(Collectors.toMap(
+	                    r -> (Long) r[0],
+	                    r -> (Double) r[1]
+	                ));
 
-	    return generateReasonType(item, preferredGenres, actionCounts);
+	    return generateReasonType(item, preferredGenres, actionCounts,avgRatings);
 	}
 	public String buildDetailMessage(
 	        RecommendationReason reason,
@@ -217,9 +262,7 @@ public class RecommendationService {
 	        recommendForuserByCategory(userId, Category.DRAMA, null),              // TV 시리즈 드라마
 	        recommendForuserByCategory(userId, Category.TV_SHOW, null),             // 예능 (데이터 확인 필요)
 	        recommendForuserByCategory(userId, Category.ANIMATION, null),          // 애니메이션 전용
-	        recommendForuserByCategory(userId, Category.BOOK, null),
-	        recommendForuserByCategory(userId, Category.MUSIC, null)
+	        recommendForuserByCategory(userId, Category.BOOK, null)
 	    );
 	}
-	
 }
