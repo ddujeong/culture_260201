@@ -80,7 +80,8 @@ public class DummyDataLoader implements CommandLineRunner {
     }
 
     private void expandPastMovieData() {
-        int randomPage = (int)(Math.random() * 40) + 2;
-        tmdbService.fetchPopularMovies(randomPage);
+    	for(int page=2; page<=3; page++){
+    	    tmdbService.fetchPopularMovies(page);
+    	}
     }
 }

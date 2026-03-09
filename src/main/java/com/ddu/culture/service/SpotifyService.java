@@ -1,9 +1,7 @@
 package com.ddu.culture.service;
 
 import com.ddu.culture.entity.Category;
-import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.StaticContent;
-import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.StaticContentRepository;
 
 import jakarta.transaction.Transactional;
@@ -20,7 +18,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +32,6 @@ public class SpotifyService {
     private String clientSecret;
 
     private final StaticContentRepository staticContentRepository;
-    private final ItemRepository itemRepository;
     private final RestTemplate restTemplate = new RestTemplate();
     private final GeminiService geminiService;
 

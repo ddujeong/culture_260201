@@ -46,7 +46,9 @@ public class TmdbService {
                 // ⚠️ 중요: 상세 정보를 위해 id 추출이 필요합니다.
                 Long tmdbId = ((Number) movie.get("id")).longValue();
 
-                if (itemRepository.existsByTitle(title)) continue;
+                if (videoContentRepository.existsByTmdbId(tmdbId)) {
+                    continue;
+                }
 
                 VideoContent video = new VideoContent(); 
                 video.setTitle(title);
@@ -59,21 +61,31 @@ public class TmdbService {
                 if (genreIds != null && genreIds.contains(16)) {
                     video.setCategory(Category.ANIMATION);
                 }
-
+                video.setTmdbId(tmdbId);
                 video.setGenre(mapTmdbGenre(genreIds));
                 video.setDescription((String) movie.get("overview"));
-                
+                Number popularity = (Number) movie.get("popularity");
+                if (popularity != null) {
+                    video.setPopularity(popularity.doubleValue());
+                }
+
+                Number voteCount = (Number) movie.get("vote_count");
+                if (voteCount != null) {
+                    video.setVoteCount(voteCount.intValue());
+                }
                 String releaseDate = (String) movie.get("release_date");
                 if (releaseDate != null && !releaseDate.isEmpty()) {
                     video.setReleaseDate(LocalDate.parse(releaseDate));
                 }
-                
-                video.setImg("https://image.tmdb.org/t/p/w500" + movie.get("poster_path"));
+                String poster = (String) movie.get("poster_path");
 
-                // 상세 정보(감독/출연진/OTT) 채우기 호출
-                updateVideoDetails(video, tmdbId, "movie"); 
-                
+                if (poster != null) {
+                    video.setImg("https://image.tmdb.org/t/p/w500" + poster);
+                }
+             // 상세 정보(감독/출연진/OTT) 채우기 호출 
+                updateVideoDetails(video, tmdbId, "movie");
                 videoContentRepository.save(video);
+             
             }
         } catch (Exception e) {
             System.err.println("TMDB 영화 데이터 수집 중 오류 발생: " + e.getMessage());
@@ -93,7 +105,9 @@ public class TmdbService {
                 String name = (String) tv.get("name");
                 Long tmdbId = ((Number) tv.get("id")).longValue();
 
-                if (itemRepository.existsByTitle(name)) continue;
+                if (videoContentRepository.existsByTmdbId(tmdbId)) {
+                    continue;
+                }
 
                 VideoContent video = new VideoContent();
                 video.setTitle(name);
@@ -105,19 +119,34 @@ public class TmdbService {
                 video.setCategory(determineTvCategory(genreIds));
                 video.setGenre(mapTmdbGenre(genreIds));
                 video.setDescription((String) tv.get("overview"));
-                
+                video.setTmdbId(tmdbId);
                 String airDate = (String) tv.get("first_air_date");
                 if (airDate != null && !airDate.isEmpty()) {
                     video.setReleaseDate(LocalDate.parse(airDate));
                 }
-                
-                video.setImg("https://image.tmdb.org/t/p/w500" + tv.get("poster_path"));
-                video.setOriginCountry(((List<String>) tv.get("origin_country")).stream().findFirst().orElse("KR"));
+                Number popularity = (Number) tv.get("popularity");
+                if (popularity != null) {
+                    video.setPopularity(popularity.doubleValue());
+                }
 
-                // ✅ 수정: "movie"가 아니라 "tv"로 호출해야 합니다.
+                Number voteCount = (Number) tv.get("vote_count");
+                if (voteCount != null) {
+                    video.setVoteCount(voteCount.intValue());
+                }
+                String poster = (String) tv.get("poster_path");
+                if (poster != null) {
+                    video.setImg("https://image.tmdb.org/t/p/w500" + poster);
+                }
+                List<String> countries = (List<String>) tv.get("origin_country");
+
+                if (countries != null && !countries.isEmpty()) {
+                    video.setOriginCountry(countries.get(0));
+                } else {
+                    video.setOriginCountry("KR");
+                }
                 updateVideoDetails(video, tmdbId, "tv"); 
-                
                 videoContentRepository.save(video);
+                
             }
         } catch (Exception e) {
             System.err.println("TMDB TV 데이터 수집 중 오류 발생: " + e.getMessage());
@@ -140,7 +169,9 @@ public class TmdbService {
                 String name = (String) tv.get("name");
                 Long tmdbId = ((Number) tv.get("id")).longValue();
 
-                if (itemRepository.existsByTitle(name)) continue;
+                if (videoContentRepository.existsByTmdbId(tmdbId)) {
+                    continue;
+                }
 
                 VideoContent video = new VideoContent();
                 video.setTitle(name);
@@ -152,16 +183,34 @@ public class TmdbService {
                 video.setCategory(determineTvCategory(genreIds));
                 video.setGenre(mapTmdbGenre(genreIds));
                 video.setDescription((String) tv.get("overview"));
-                
+                video.setTmdbId(tmdbId);
                 String airDate = (String) tv.get("first_air_date");
                 if (airDate != null && !airDate.isEmpty()) {
                     video.setReleaseDate(LocalDate.parse(airDate));
                 }
-                
-                video.setImg("https://image.tmdb.org/t/p/w500" + tv.get("poster_path"));
-                video.setOriginCountry(((List<String>) tv.get("origin_country")).stream().findFirst().orElse("KR"));
+                String poster = (String) tv.get("poster_path");
+                if (poster != null) {
+                    video.setImg("https://image.tmdb.org/t/p/w500" + poster);
+                }
+                Number popularity = (Number) tv.get("popularity");
+                if (popularity != null) {
+                    video.setPopularity(popularity.doubleValue());
+                }
+
+                Number voteCount = (Number) tv.get("vote_count");
+                if (voteCount != null) {
+                    video.setVoteCount(voteCount.intValue());
+                }
+                List<String> countries = (List<String>) tv.get("origin_country");
+
+                if (countries != null && !countries.isEmpty()) {
+                    video.setOriginCountry(countries.get(0));
+                } else {
+                    video.setOriginCountry("KR");
+                }   
                 updateVideoDetails(video, tmdbId, "tv");
                 videoContentRepository.save(video);
+                
             }
         } catch (Exception e) {
             System.err.println("한국 예능 수집 중 에러: " + e.getMessage());
@@ -198,7 +247,9 @@ public class TmdbService {
             	String title = "movie".equals(type) ? (String) data.get("title") : (String) data.get("name");
                 Long tmdbId = ((Number) data.get("id")).longValue();
 
-                if (itemRepository.existsByTitle(title)) continue;
+                if (videoContentRepository.existsByTmdbId(tmdbId)) {
+                    continue;
+                }
 
                 VideoContent video = new VideoContent();
                 video.setTitle(title);
@@ -210,23 +261,37 @@ public class TmdbService {
                 video.setCategory(Category.ANIMATION);
                 video.setGenre(mapTmdbGenre(genreIds));
                 video.setDescription((String) data.get("overview"));
-                
+                video.setTmdbId(tmdbId);
                 String dateKey = "movie".equals(type) ? "release_date" : "first_air_date";
                 String dateStr = (String) data.get(dateKey);
                 if (dateStr != null && !dateStr.isEmpty()) {
                     video.setReleaseDate(LocalDate.parse(dateStr));
                 }
-                
-                video.setImg("https://image.tmdb.org/t/p/w500" + data.get("poster_path"));
+                String poster = (String) data.get("poster_path");
+                if (poster != null) {
+                    video.setImg("https://image.tmdb.org/t/p/w500" + poster);
+                }
                 if (data.containsKey("origin_country")) {
                     List<String> countries = (List<String>) data.get("origin_country");
-                    video.setOriginCountry(countries.stream().findFirst().orElse("Unknown"));
+                    if (countries != null && !countries.isEmpty()) {
+                        video.setOriginCountry(countries.get(0));
+                    } else {
+                        video.setOriginCountry("Unknown");
+                    }
+                }
+                Number popularity = (Number) data.get("popularity");
+                if (popularity != null) {
+                    video.setPopularity(popularity.doubleValue());
                 }
 
-                // 상세 정보 업데이트 (credits, providers 등)
+                Number voteCount = (Number) data.get("vote_count");
+                if (voteCount != null) {
+                    video.setVoteCount(voteCount.intValue());
+                }
                 updateVideoDetails(video, tmdbId, type);
-                
                 videoContentRepository.save(video);
+               
+
             }
         } catch (Exception e) {
             System.err.println("애니메이션 수집 중 오류: " + e.getMessage());
@@ -250,32 +315,39 @@ public class TmdbService {
                     video.getActors().clear(); // 기존 데이터 초기화
                     castList.stream().limit(8).forEach(c -> {
                         String name = (String) c.get("name");
-                        String originalName = (String) c.get("original_name");
                         String pPath = (String) c.get("profile_path");
 
                         Actor actor = new Actor();
-                        actor.setName((name != null && name.matches(".*[\\u4e00-\\u9fa5].*")) ? originalName : name);
+                        String cleanName = sanitizeName(name);
+
+                        if (cleanName != null) {
+                            actor.setName(cleanName);
+                            video.getActors().add(actor);
+                        }
                         actor.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
                         actor.setVideoContent(video);
-                        video.getActors().add(actor);
                     });
                 }
                 video.getDirectors().clear();
                 // 2. 감독(Director / Created By) 추출
                 if ("movie".equals(type)) {
-                    List<Map<String, Object>> crewList = (List<Map<String, Object>>) credits.get("crew");
-                    crewList.stream()
-                    .filter(c -> "Director".equals(c.get("job")))
-                    .limit(2) // 보통 1~2명
-                    .forEach(c -> {
-                        Director director = new Director();
-                        String name = (String) c.get("name");
-                        String pPath = (String) c.get("profile_path");
-                        director.setName((name != null && name.matches(".*[\\u4e00-\\u9fa5].*")) ? (String)c.get("original_name") : name);
-                        director.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
-                        director.setVideoContent(video);
-                        video.getDirectors().add(director);
-                    });
+                	List<Map<String, Object>> crewList = (List<Map<String, Object>>) credits.get("crew");
+
+                	if (crewList != null) {
+                	    crewList.stream()
+                	        .filter(c -> "Director".equals(c.get("job")))
+                	        .limit(2)
+                	        .forEach(c -> {
+                	            Director director = new Director();
+                	            String name = (String) c.get("name");
+                	            String pPath = (String) c.get("profile_path");
+
+                	            director.setName(name);
+                	            director.setProfilePath(pPath != null ? "https://image.tmdb.org/t/p/w185" + pPath : null);
+                	            director.setVideoContent(video);
+                	            video.getDirectors().add(director);
+                	        });
+                	}
                 } else {
                     List<Map<String, Object>> createdBy = (List<Map<String, Object>>) details.get("created_by");
                    if (createdBy != null) {
@@ -296,13 +368,21 @@ public class TmdbService {
 
             // 3. OTT 정보(Watch Providers) 추출
             Map<String, Object> watchProviders = (Map<String, Object>) details.get("watch/providers");
+
             if (watchProviders != null) {
                 Map<String, Object> results = (Map<String, Object>) watchProviders.get("results");
-                Map<String, Object> koProviders = (Map<String, Object>) results.get("KR");
-                
-                if (koProviders != null && koProviders.containsKey("flatrate")) {
-                    List<Map<String, Object>> flatrate = (List<Map<String, Object>>) koProviders.get("flatrate");
-                    String cleanProviders = flatrate.stream()
+
+                if (results != null) {
+                    Map<String, Object> koProviders = (Map<String, Object>) results.get("KR");
+
+                    if (koProviders != null) {
+
+                        List<Map<String, Object>> flatrate =
+                            (List<Map<String, Object>>) koProviders.get("flatrate");
+
+                        if (flatrate != null && !flatrate.isEmpty()) {
+
+                            String cleanProviders = flatrate.stream()
                             .map(p -> (String) p.get("provider_name"))
                             .map(name -> {
                                 // 핵심 브랜드명만 남기고 정제
@@ -321,6 +401,8 @@ public class TmdbService {
                             .collect(Collectors.joining(", "));
                     video.setOttProviders(cleanProviders);
                 }
+                }
+            }
             }
             if ("tv".equals(type)) {
                 List<Map<String, Object>> seasonsData = (List<Map<String, Object>>) details.get("seasons");
@@ -389,7 +471,7 @@ public class TmdbService {
         if (name.matches(".*[\\u4e00-\\u9fa5].*")) {
             // 이 경우, TMDB에서 해당 인물의 영문 이름을 다시 가져와야 하지만, 
             // 간단하게는 "알 수 없음" 처리하거나 한자만 제거할 수 있습니다.
-            return ""; 
+            return null; 
         }
         
         // 영어 이름은 그대로 유지

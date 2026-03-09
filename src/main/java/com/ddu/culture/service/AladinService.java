@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.ddu.culture.entity.Category;
-import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.StaticContent;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.StaticContentRepository;
@@ -25,7 +24,6 @@ public class AladinService {
     private String apiKey;
 
     private final StaticContentRepository staticContentRepository; // StaticContent 전용 사용
-    private final ItemRepository itemRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Transactional

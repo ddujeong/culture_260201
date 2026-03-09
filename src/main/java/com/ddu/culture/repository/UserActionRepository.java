@@ -8,26 +8,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ddu.culture.entity.ActionType;
-import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.UserAction;
 
 public interface UserActionRepository extends JpaRepository<UserAction, Long>{
 
-	List<UserAction> findByUser(User user);
-	
-	List<UserAction> findByUserAndActionType(User user, ActionType actionType);
-	
 	List<UserAction> findByUserId(Long userId);
 
 	List<UserAction> findByUserIdAndActionType(Long userId, ActionType actionType);
 
 	List<UserAction> findTop20ByUserIdOrderByCreatedAtDesc(Long userId);
 
-	List<UserAction> findTop20ByUserIdAndActionTypeOrderByCreatedAtDesc(
-	    Long userId,
-	    ActionType actionType
-	);
-	
 	boolean existsByUserIdAndItemIdAndActionType(
 	        Long userId,
 	        Long itemId,

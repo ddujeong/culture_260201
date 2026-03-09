@@ -19,7 +19,7 @@ public class ChatController {
         String userMessage = request.getMessage();
         
         // GeminiService를 통해 우리 DB 기반 추천 답변 생성
-        String aiAnswer = geminiService.getCultureRecommendation(userId,userMessage);
+        String aiAnswer = geminiService.getCultureRecommendation(userId,userMessage,request.getViewedItemId());
         
         // 응답 객체에 담아서 반환
         return ResponseEntity.ok(new ChatDto.Response(aiAnswer));

@@ -18,12 +18,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class VideoContent extends Item {
-    
-    //private String director;      // 감독 (TV는 Created By)
-    
-    //@Column(length = 1000)
-    //private String cast;          // 주요 출연진
-    
+	@Column(unique = true)
+    private Long tmdbId;   // TMDB 고유 ID (중복 방지용)
+	
     private String ottProviders;  // 시청 가능 OTT (Netflix, Disney Plus 등)
     
     private Integer runtime;      // 영화: 러닝타임 / TV: 에피소드 평균 시간
@@ -33,7 +30,8 @@ public class VideoContent extends Item {
     private Integer totalEpisodes;
     
     private String originCountry; // 제작 국가
-    
+    private Double popularity;
+    private Integer voteCount;
  // VideoContent.java 내부에 추가
     @OneToMany(mappedBy = "videoContent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Season> seasons = new ArrayList<>();

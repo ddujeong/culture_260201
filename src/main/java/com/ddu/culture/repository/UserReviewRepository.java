@@ -5,20 +5,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ddu.culture.entity.Category;
-import com.ddu.culture.entity.Item;
-import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.UserReview;
 import java.util.List;
-import java.util.Optional;
 
 
 public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
 
 	List<UserReview> findByUserId(Long userId);
-	
-	Optional<UserReview> findByUserAndItem(User user, Item item);
-	
-	List<UserReview> findByItem(Item item);
 	
     List<UserReview> findByItemIdOrderByCreatedAtDesc(Long itemId);
 
@@ -29,8 +22,6 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Long> {
     
     @Query("SELECT AVG(r.rating) FROM UserReview r WHERE r.item.id = :itemId")
     Double findAvgRatingByItemId(@Param("itemId") Long itemId);
-
-    Long countByItemId(Long itemId);
 
     @Query("SELECT r.rating, COUNT(r) " +
     	       "FROM UserReview r " +

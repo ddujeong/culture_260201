@@ -1,5 +1,7 @@
 package com.ddu.culture.service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,13 +9,11 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.ddu.culture.dto.ItemDetailResponse;
-import com.ddu.culture.dto.ItemScoreDto;
 import com.ddu.culture.dto.ItemSummaryResponse;
 import com.ddu.culture.dto.RecommendationReasonDto;
 import com.ddu.culture.entity.Category;
 import com.ddu.culture.entity.Item;
 import com.ddu.culture.entity.StaticContent;
-import com.ddu.culture.entity.User;
 import com.ddu.culture.entity.VideoContent;
 import com.ddu.culture.repository.ItemRepository;
 import com.ddu.culture.repository.UserPreferencesRepository;
@@ -29,9 +29,6 @@ public class ItemService {
 	private final ItemRepository itemRepository;
 	private final UserReviewRepository userReviewRepository;
 	private final RecommendationService recommendationService;
-	private final UserRepository userRepository;
-	private final UserPreferencesRepository userPreferencesRepository;
-
 	
 	public List<Item> getRandomItemsByCategory(Category category, int limit) {
 		List<Item> items = itemRepository.findByCategory(category);
@@ -69,8 +66,6 @@ public class ItemService {
 
         return response;
     }
-	// ... 상단 어노테이션 및 필드 생략 ...
-
 	/**
 	 * Type -> Category -> Genre 계층 구조 + 검색(Search) + 정렬(Sort) 필터링
 	 */
@@ -123,7 +118,7 @@ public class ItemService {
 	            .toList();
 	}
 	private ItemDetailResponse.OTTInfo createOttInfo(String name, String title) {
-		String encodedTitle = java.net.URLEncoder.encode(title, java.nio.charset.StandardCharsets.UTF_8);
+		String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
 		
 		return switch (name) {
         case "Netflix" -> new ItemDetailResponse.OTTInfo(name, "https://www.netflix.com/search?q=" + encodedTitle, "#E50914", "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg");

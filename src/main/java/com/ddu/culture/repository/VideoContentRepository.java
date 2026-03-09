@@ -7,4 +7,6 @@ import com.ddu.culture.entity.VideoContent;
 
 @Repository
 public interface VideoContentRepository extends JpaRepository<VideoContent, Long> {
+
+	boolean existsByTmdbId(Long tmdbId);
 }

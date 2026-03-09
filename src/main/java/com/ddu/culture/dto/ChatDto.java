@@ -11,6 +11,7 @@ public class ChatDto {
     @AllArgsConstructor
     public static class Request {
         private String message;
+        private Long viewedItemId;
     }
 
     @Getter

@@ -4,13 +4,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.ddu.culture.entity.StaticContent;
-import java.util.List;
 import java.util.Optional;
-
 
 @Repository
 public interface StaticContentRepository extends JpaRepository<StaticContent, Long> {
 
 	Optional<StaticContent> findByIsbn(String isbn);
-    Optional<StaticContent> findBySpotifyTrackId(String spotifyTrackId);
-    boolean existsBySpotifyTrackId(String spotifyTrackId);}
+
+	Optional<StaticContent> findBySpotifyTrackId(String spotifyTrackId);
+
+	boolean existsBySpotifyTrackId(String spotifyTrackId);
+}

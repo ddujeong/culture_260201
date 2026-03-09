@@ -91,30 +91,19 @@ public class UserActionService {
         userActionRepository.save(reviewed);
     }
 
- // UserActionService.java
     public String getActionStatus(Long userId, Long itemId) {
 
-    	// 1️⃣ 리뷰 완료 확인
         if (userReviewRepository.existsByUserIdAndItemId(userId, itemId)) {
             return "REVIEWED";
         }
-
-        // 2️⃣ 시청 완료 확인
         if (userActionRepository.existsByUserIdAndItemIdAndActionType(userId, itemId, ActionType.WATCHED)) {
             return "WATCHED";
         }
-
-        // 3️⃣ 보고싶어요 확인
         if (userActionRepository.existsByUserIdAndItemIdAndActionType(userId, itemId, ActionType.RESERVE)) {
             return "RESERVE";
         }
 
         return null;
-    }
-
-    // 🔹 Controller에서 호출 가능하도록 boolean 확인용
-    public boolean existsByUserIdAndItemIdAndActionType(Long userId, Long itemId, ActionType type) {
-        return userActionRepository.existsByUserIdAndItemIdAndActionType(userId, itemId, type);
     }
    
 }
