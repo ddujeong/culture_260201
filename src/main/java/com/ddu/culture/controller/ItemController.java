@@ -3,6 +3,8 @@ package com.ddu.culture.controller;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,8 +30,9 @@ public class ItemController {
 	@GetMapping("/random")
 	public ResponseEntity<?> getRandomItems(
 			@RequestParam(name = "category") Category category,
-			@RequestParam(defaultValue = "5", name = "limit") int limit) {
-		List<Item> items = itemService.getRandomItemsByCategory(category, limit);
+			@RequestParam(defaultValue = "5", name = "limit") int limit,
+			Pageable pageable) {
+		Page<Item> items = itemService.getRandomItemsByCategory(category, limit, pageable);
 	    
 	    // 엔티티 리스트를 DTO 리스트로 변환 (정석)
 	    return ResponseEntity.ok(items.stream()
@@ -43,15 +46,16 @@ public class ItemController {
         return ResponseEntity.ok(response);
     }
 	@GetMapping
-	public ResponseEntity<List<ItemSummaryResponse>> getItems(
+	public ResponseEntity<Page<ItemSummaryResponse>> getItems(
 	        @RequestParam(required = false, defaultValue = "ALL", name = "type") String type,
 	        @RequestParam(required = false, defaultValue = "ALL", name = "category") String category,
 	        @RequestParam(required = false, defaultValue = "ALL", name = "genre") String genre,
 	        @RequestParam(required = false, name = "serch") String search,
-	        @RequestParam(defaultValue = "newest", name = "sort") String sort) {
+	        @RequestParam(defaultValue = "newest", name = "sort") String sort,
+	        Pageable pageable) {
 	    
 	    // type(VIDEO, STATIC)과 category(MOVIE, DRAMA 등)를 모두 서비스에 전달
-	    List<ItemSummaryResponse> items = itemService.getItemsByFilter(type, category, genre, search, sort);
+	    Page<ItemSummaryResponse> items = itemService.getItemsByFilter(type, category, genre, search, sort, pageable);
 	    return ResponseEntity.ok(items);
 	}
 }

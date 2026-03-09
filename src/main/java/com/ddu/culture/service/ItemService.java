@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.ddu.culture.dto.ItemDetailResponse;
@@ -30,10 +33,18 @@ public class ItemService {
 	private final UserReviewRepository userReviewRepository;
 	private final RecommendationService recommendationService;
 	
-	public List<Item> getRandomItemsByCategory(Category category, int limit) {
-		List<Item> items = itemRepository.findByCategory(category);
-		Collections.shuffle(items);
-		return items.stream().limit(limit).toList();
+	public Page<Item> getRandomItemsByCategory(Category category, int limit, Pageable pageable) {
+
+	    Page<Item> page = itemRepository.findByCategory(category, pageable);
+
+	    List<Item> shuffled = new ArrayList<>(page.getContent());
+	    Collections.shuffle(shuffled);
+
+	    List<Item> limited = shuffled.stream()
+	            .limit(limit)
+	            .toList();
+
+	    return new PageImpl<>(limited, pageable, limited.size());
 	}
 	
 	public ItemDetailResponse getItemDetail(Long itemId, Long userId) {
@@ -69,7 +80,7 @@ public class ItemService {
 	/**
 	 * Type -> Category -> Genre 계층 구조 + 검색(Search) + 정렬(Sort) 필터링
 	 */
-	public List<ItemSummaryResponse> getItemsByFilter(String type, String category, String genre, String search, String sort) {
+	public Page<ItemSummaryResponse> getItemsByFilter(String type, String category, String genre, String search, String sort, Pageable pageable) {
 	    List<Item> items;
 
 	    // 1. 대분류 (Item Type) 결정
@@ -89,33 +100,40 @@ public class ItemService {
 	    } else if (itemClass != null) {
 	        items = itemRepository.findByItemType(itemClass);
 	    } else if (cat != null) {
-	        items = itemRepository.findByCategory(cat);
+	        items = itemRepository.findByCategory(cat, pageable).getContent();
 	    } else {
 	        items = itemRepository.findAll();
 	    }
 
 	    // 4. Stream을 이용한 검색, 장르 필터링 및 정렬 처리
-	    return items.stream()
-	            // [장르 필터링]
-	            .filter(i -> genre == null || "ALL".equalsIgnoreCase(genre) || 
-	                   (i.getGenre() != null && i.getGenre().contains(genre)))
-	            // [검색어 필터링] 제목 기준
-	            .filter(i -> search == null || search.isBlank() || 
-	                   i.getTitle().toLowerCase().contains(search.toLowerCase()))
-	            // [정렬 처리]
+	    List<Item> filtered = items.stream()
+	            .filter(i -> genre == null || "ALL".equalsIgnoreCase(genre) ||
+	                    (i.getGenre() != null && i.getGenre().contains(genre)))
+	            .filter(i -> search == null || search.isBlank() ||
+	                    i.getTitle().toLowerCase().contains(search.toLowerCase()))
 	            .sorted((a, b) -> {
 	                if ("rating".equalsIgnoreCase(sort)) {
-	                    // 별점 높은 순 (Double 비교)
 	                    return Double.compare(b.getExternalRating(), a.getExternalRating());
 	                } else if ("oldest".equalsIgnoreCase(sort)) {
-	                    // 오래된 등록 순
 	                    return a.getCreatedAt().compareTo(b.getCreatedAt());
 	                }
-	                // 기본: 최신 등록 순 (newest)
 	                return b.getCreatedAt().compareTo(a.getCreatedAt());
 	            })
+	            .toList();
+	    
+	    int start = (int) pageable.getOffset();
+
+	    if (start >= filtered.size()) {
+	        return new PageImpl<>(Collections.emptyList(), pageable, filtered.size());
+	    }
+
+	    int end = Math.min(start + pageable.getPageSize(), filtered.size());
+	    List<ItemSummaryResponse> pageContent = filtered.subList(start, end)
+	            .stream()
 	            .map(ItemSummaryResponse::from)
 	            .toList();
+
+	    return new PageImpl<>(pageContent, pageable, filtered.size());
 	}
 	private ItemDetailResponse.OTTInfo createOttInfo(String name, String title) {
 		String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
